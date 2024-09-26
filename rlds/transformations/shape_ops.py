@@ -16,10 +16,11 @@
 """Library functions to operate on dataset shapes."""
 
 import sys
-from typing import Any, Tuple
-
+from typing import Any, Dict, Tuple, TypeAlias
 from rlds import rlds_types
 import tensorflow as tf
+
+TensorSpecDict: TypeAlias = tf.TensorSpec | Dict[str, 'TensorSpecDict']
 
 
 def _zeros_shape(element_shape: tf.TensorShape) -> Tuple[Any, ...]:
@@ -42,13 +43,15 @@ def size_from_spec(spec: tf.TensorSpec) -> int:
     return sum(
         tf.nest.flatten(
             tf.nest.map_structure(
-                lambda t: t.dtype.size * t.shape.num_elements(),
-                spec).values()))
+                lambda t: t.dtype.size * t.shape.num_elements(), spec
+            ).values()
+        )
+    )
   except TypeError:
     return sys.maxsize
 
 
-def zeros_from_spec(spec: tf.TensorSpec) -> rlds_types.Step:
+def zeros_from_spec(spec: TensorSpecDict) -> rlds_types.Step:
   """Builds a tensor of zeros with the given spec.
 
   If the spec has been obtained from a batch of steps where the first
@@ -62,11 +65,12 @@ def zeros_from_spec(spec: tf.TensorSpec) -> rlds_types.Step:
     zeros.
   """
   return tf.nest.map_structure(
-      lambda t: tf.zeros(_zeros_shape(t.shape), t.dtype), spec)
+      lambda t: tf.zeros(_zeros_shape(t.shape), t.dtype), spec
+  )
 
 
 def uniform_from_spec(
-    spec: tf.TensorSpec, minval: int, maxval: int, seed: int
+    spec: TensorSpecDict, minval: int, maxval: int, seed: int
 ) -> rlds_types.Step:
   """Builds a tensor of random values with the given spec.
 
